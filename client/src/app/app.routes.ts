@@ -59,6 +59,10 @@ export const routes: Routes = [
         path: 'submissions',
         loadComponent: () => import('./features/admin/submissions/submissions.component').then(m => m.SubmissionsComponent),
       },
+      {
+        path: 'messages',
+        loadComponent: () => import('./features/admin/messages/messages.component').then(m => m.AdminMessagesComponent),
+      },
     ],
   },
 

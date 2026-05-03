@@ -24,6 +24,7 @@ import { ToastService } from '../../../shared/services/toast.service';
               <span class="badge-count">{{ pendingCount() }}</span>
             }
           </a>
+          <a routerLink="/admin/messages" routerLinkActive="active">💬 הודעות</a>
         </nav>
         <button class="btn btn-outline btn-sm logout-btn" (click)="logout()">התנתק</button>
       </aside>
@@ -52,6 +53,10 @@ import { ToastService } from '../../../shared/services/toast.service';
           @if (pendingCount() > 0) {
             <span class="mobile-badge">{{ pendingCount() }}</span>
           }
+        </a>
+        <a routerLink="/admin/messages" routerLinkActive="active">
+          <span class="nav-icon">💬</span>
+          <span>הודעות</span>
         </a>
         <button class="nav-logout" (click)="logout()">
           <span class="nav-icon">🚪</span>
@@ -109,15 +114,15 @@ import { ToastService } from '../../../shared/services/toast.service';
 
         a, .nav-logout {
           flex: 1; display: flex; flex-direction: column; align-items: center;
-          padding: 0.5rem 0.25rem;
-          color: #aaa; text-decoration: none; font-size: 0.65rem; font-weight: 600;
-          gap: 0.15rem; background: none; border: none; cursor: pointer;
+          padding: 0.4rem 0.1rem;
+          color: #aaa; text-decoration: none; font-size: 0.6rem; font-weight: 600;
+          gap: 0.1rem; background: none; border: none; cursor: pointer;
           font-family: inherit;
           min-height: 56px; justify-content: center;
           &.active { color: var(--primary); }
           &:hover { color: #fff; }
         }
-        .nav-icon { font-size: 1.4rem; line-height: 1; }
+        .nav-icon { font-size: 1.25rem; line-height: 1; }
         .nav-submissions { position: relative; }
         .mobile-badge {
           position: absolute; top: 6px; right: 50%;
