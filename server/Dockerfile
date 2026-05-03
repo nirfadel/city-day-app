@@ -2,12 +2,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci --omit=dev || npm install --omit=dev
+COPY server/package*.json ./
+RUN npm install
 
-COPY tsconfig.json ./
-COPY src ./src
-RUN npm install typescript --save-dev && npx tsc
+COPY server/tsconfig.json ./
+COPY server/src ./src
+RUN npx tsc
 
 # Remove dev deps after build
 RUN npm prune --omit=dev
