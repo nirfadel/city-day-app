@@ -1,0 +1,11 @@
+{
+  "name": "city-day-app",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "install:all": "npm i && npm i --prefix server && npm i --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

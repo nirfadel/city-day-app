@@ -1,0 +1,7 @@
+{
+  "buildCommand": "npm run build:prod",
+  "outputDirectory": "dist/city-day-client/browser",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

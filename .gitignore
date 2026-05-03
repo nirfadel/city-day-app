@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build output
+client/dist/
+server/dist/
+
+# Environment
+.env
+server/.env
+
+# Uploads (user-generated content, not in repo)
+server/uploads/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Angular cache
+client/.angular/
