@@ -9,27 +9,38 @@ import { SOCKET_EVENTS } from '../../../../../server/src/types';
 export class SocketService implements OnDestroy {
   private socket!: Socket;
 
+  private joinPayload: { event: string; data?: unknown } | null = null;
+
   connect(): void {
     if (this.socket?.connected) return;
-    this.socket = io(environment.apiUrl, { transports: ['websocket'] });
-    this.socket.on('connect', () => console.log('[Socket] Connected'));
-    this.socket.on('disconnect', () => console.log('[Socket] Disconnected'));
-  }
-
-  private emitWhenReady(event: string, data?: unknown): void {
-    if (this.socket.connected) {
-      this.socket.emit(event, data);
-    } else {
-      this.socket.once('connect', () => this.socket.emit(event, data));
-    }
+    this.socket = io(environment.apiUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
+    this.socket.on('connect', () => {
+      console.log('[Socket] Connected');
+      // Re-join room on every connect/reconnect
+      if (this.joinPayload) {
+        this.socket.emit(this.joinPayload.event, this.joinPayload.data);
+      }
+    });
+    this.socket.on('disconnect', reason => console.log('[Socket] Disconnected:', reason));
+    this.socket.on('connect_error', err => console.warn('[Socket] Error:', err.message));
   }
 
   joinAsPlayer(groupId: string, nickname: string, groupName?: string, groupColor?: string): void {
-    this.emitWhenReady(SOCKET_EVENTS.JOIN_ROOM, { groupId, nickname, groupName, groupColor });
+    this.joinPayload = { event: SOCKET_EVENTS.JOIN_ROOM, data: { groupId, nickname, groupName, groupColor } };
+    if (this.socket?.connected) this.socket.emit(this.joinPayload.event, this.joinPayload.data);
+    else this.socket?.once('connect', () => this.socket.emit(this.joinPayload!.event, this.joinPayload!.data));
   }
 
   joinAsAdmin(): void {
-    this.emitWhenReady(SOCKET_EVENTS.ADMIN_JOIN);
+    this.joinPayload = { event: SOCKET_EVENTS.ADMIN_JOIN };
+    if (this.socket?.connected) this.socket.emit(SOCKET_EVENTS.ADMIN_JOIN);
+    else this.socket?.once('connect', () => this.socket.emit(SOCKET_EVENTS.ADMIN_JOIN));
   }
 
   // Generic listener
