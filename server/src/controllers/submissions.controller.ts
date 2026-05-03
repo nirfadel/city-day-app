@@ -125,13 +125,15 @@ export const reviewSubmission = async (req: Request, res: Response) => {
   }
 
   // Notify group about review result
-  getIO().to(`group-${groupId}`).emit(SOCKET_EVENTS.SUBMISSION_REVIEWED, {
+  const reviewedPayload = {
     submissionId: submission._id,
     missionId: submission.missionId,
     status,
     adminFeedback,
     score,
-  });
+  };
+  getIO().to(`group-${groupId}`).emit(SOCKET_EVENTS.SUBMISSION_REVIEWED, reviewedPayload);
+  getIO().to('admin-room').emit(SOCKET_EVENTS.SUBMISSION_REVIEWED, reviewedPayload);
 
   ok(res, submission, `Submission ${status}`);
 };
