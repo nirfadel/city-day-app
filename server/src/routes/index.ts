@@ -22,7 +22,7 @@ router.get ('/auth/me',          requireAuth, Auth.getMe);
 // ============================================================
 // GROUPS
 // ============================================================
-router.get   ('/groups',                requireAuth,  Groups.getGroups);
+router.get   ('/groups',                             Groups.getGroups);
 router.post  ('/groups',              requireAdmin, Groups.createGroup);
 router.put   ('/groups/:id',          requireAdmin, Groups.updateGroup);
 router.delete('/groups/:id',          requireAdmin, Groups.deleteGroup);
