@@ -33,7 +33,7 @@ declare global {
 const SECRET = process.env.JWT_SECRET || 'dev-secret';
 
 export const signToken = (payload: object): string =>
-  jwt.sign(payload, SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
+  jwt.sign(payload, SECRET, { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any });
 
 export const verifyToken = (token: string): jwt.JwtPayload =>
   jwt.verify(token, SECRET) as jwt.JwtPayload;
