@@ -75,6 +75,17 @@ interface MissionForm {
           <div class="form-group">
             <label>קובץ מדיה (תמונה)</label>
             <input type="file" accept="image/*" (change)="onMediaSelect($event)" />
+            @if (mediaPreview) {
+              <div class="current-hint-preview">
+                <span class="text-muted" style="font-size:0.8rem">✅ נבחר:</span>
+                <img [src]="mediaPreview" style="max-height:60px;border-radius:4px" />
+              </div>
+            } @else if (editingMission()?.mediaUrl) {
+              <div class="current-hint-preview">
+                <span class="text-muted" style="font-size:0.8rem">נוכחי:</span>
+                <img [src]="editingMission()!.mediaUrl" style="max-height:60px;border-radius:4px" />
+              </div>
+            }
           </div>
 
           <div class="hint-section">
@@ -89,9 +100,14 @@ interface MissionForm {
             <div class="form-group">
               <label>תמונת הרמז (JPEG)</label>
               <input type="file" accept="image/*" (change)="onHintSelect($event)" />
-              @if (editingMission()?.autoHintOnApproval) {
+              @if (hintPreview) {
                 <div class="current-hint-preview">
-                  <span class="text-muted" style="font-size:0.8rem">רמז נוכחי:</span>
+                  <span class="text-muted" style="font-size:0.8rem">✅ נבחר:</span>
+                  <img [src]="hintPreview" style="max-height:60px;border-radius:4px" />
+                </div>
+              } @else if (editingMission()?.autoHintOnApproval) {
+                <div class="current-hint-preview">
+                  <span class="text-muted" style="font-size:0.8rem">נוכחי:</span>
                   <img [src]="editingMission()!.autoHintOnApproval" style="max-height:60px;border-radius:4px" />
                 </div>
               }
@@ -212,6 +228,8 @@ export class AdminMissionsComponent implements OnInit {
   form: MissionForm = this.emptyForm();
   mediaFile: File | null = null;
   hintFile:  File | null = null;
+  mediaPreview: string | null = null;
+  hintPreview:  string | null = null;
 
   ngOnInit() { this.load(); }
 
@@ -251,6 +269,8 @@ export class AdminMissionsComponent implements OnInit {
     this.editingMission.set(mission);
     this.mediaFile = null;
     this.hintFile  = null;
+    this.mediaPreview = null;
+    this.hintPreview  = null;
     this.showForm.set('edit');
     setTimeout(() => {
       const el = this.formCard?.nativeElement;
@@ -265,10 +285,23 @@ export class AdminMissionsComponent implements OnInit {
   closeForm() {
     this.showForm.set(null);
     this.editingMission.set(null);
+    this.mediaFile = null;
+    this.hintFile  = null;
+    this.mediaPreview = null;
+    this.hintPreview  = null;
   }
 
-  onMediaSelect(e: Event) { this.mediaFile = (e.target as HTMLInputElement).files?.[0] ?? null; }
-  onHintSelect(e: Event)  { this.hintFile  = (e.target as HTMLInputElement).files?.[0] ?? null; }
+  onMediaSelect(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0] ?? null;
+    this.mediaFile = file;
+    this.mediaPreview = file ? URL.createObjectURL(file) : null;
+  }
+
+  onHintSelect(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0] ?? null;
+    this.hintFile = file;
+    this.hintPreview = file ? URL.createObjectURL(file) : null;
+  }
 
   save() {
     this.saving.set(true);
