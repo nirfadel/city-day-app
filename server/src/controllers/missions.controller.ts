@@ -54,6 +54,7 @@ export const updateMission = async (req: Request, res: Response) => {
   const update: Record<string, unknown> = { ...req.body };
   const files = req.files as Record<string, Express.Multer.File[]> | undefined;
 
+  if (update.order) update.order = Number(update.order);
   if (files?.media?.[0]) update.mediaUrl           = fileUrl(req, files.media[0].filename);
   if (files?.hint?.[0])  update.autoHintOnApproval = fileUrl(req, files.hint[0].filename);
   if (update.hints && typeof update.hints === 'string') update.hints = JSON.parse(update.hints as string);
