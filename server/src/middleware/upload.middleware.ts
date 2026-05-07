@@ -18,10 +18,15 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.webp', '.heic', '.heif'];
+  const allowed = [
+    '.jpg', '.jpeg', '.png', '.gif', '.pdf', '.webp', '.heic', '.heif',
+    '.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v',
+  ];
   const ext = path.extname(file.originalname).toLowerCase();
-  // also allow by mimetype for files with missing/wrong extension
-  const allowedMime = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'];
+  const allowedMime = [
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif', 'application/pdf',
+    'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm', 'video/x-m4v',
+  ];
   if (allowed.includes(ext) || allowedMime.includes(file.mimetype)) cb(null, true);
   else cb(new Error(`File type not allowed: ${ext}`));
 };
@@ -29,7 +34,7 @@ const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFil
 export const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: Number(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: Number(process.env.MAX_FILE_SIZE) || 200 * 1024 * 1024 }, // 200MB
 });
 
 // Helper: build public URL for uploaded file
