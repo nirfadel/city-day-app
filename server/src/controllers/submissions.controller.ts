@@ -99,8 +99,8 @@ export const reviewSubmission = async (req: Request, res: Response) => {
   }
 
   if (status === 'approved') {
-    // Auto-send hint for this mission (only to this group)
-    if (mission?.autoHintOnApproval) {
+    // Auto-send hint only when hintMode is 'auto'
+    if (mission?.hintMode === 'auto' && mission?.autoHintOnApproval) {
       const hintMsg = await Message.create({
         groupId,
         type: 'hint',

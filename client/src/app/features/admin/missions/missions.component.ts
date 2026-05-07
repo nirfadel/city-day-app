@@ -12,6 +12,7 @@ interface MissionForm {
   delivery: MissionDelivery;
   content: string;
   autoHintTitle: string;
+  hintMode: 'auto' | 'manual' | 'none';
 }
 
 @Component({
@@ -90,7 +91,7 @@ interface MissionForm {
 
           <div class="hint-section">
             <div class="hint-section-header">
-              <h4>🗺️ רמז אוטומטי לאחר אישור</h4>
+              <h4>🗺️ רמז למשימה</h4>
               @if (showForm() === 'edit' && editingMission()?.autoHintOnApproval && !hintPreview) {
                 <button class="btn btn-danger btn-sm" [disabled]="removingHint()"
                         (click)="removeAutoHint()">
@@ -98,28 +99,49 @@ interface MissionForm {
                 </button>
               }
             </div>
-            <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.75rem">
-              כאשר המנהל מאשר submission על משימה זו, הרמז ישלח אוטומטית לקבוצה כהודעה.
-            </p>
-            <div class="form-group">
-              <label>כותרת הרמז</label>
-              <input [(ngModel)]="form.autoHintTitle" placeholder="לדוגמה: רמז 1 — ניווט לכיכר פריז" />
+
+            <!-- Mode selector -->
+            <div class="hint-mode-tabs">
+              <button class="hint-mode-tab" [class.active]="form.hintMode === 'none'"
+                      (click)="form.hintMode = 'none'" type="button">ללא רמז</button>
+              <button class="hint-mode-tab" [class.active]="form.hintMode === 'auto'"
+                      (click)="form.hintMode = 'auto'" type="button">⚡ אוטומטי</button>
+              <button class="hint-mode-tab" [class.active]="form.hintMode === 'manual'"
+                      (click)="form.hintMode = 'manual'" type="button">✋ ידני</button>
             </div>
-            <div class="form-group">
-              <label>תמונת הרמז (JPEG)</label>
-              <input type="file" accept="image/*" (change)="onHintSelect($event)" />
-              @if (hintPreview) {
-                <div class="current-hint-preview">
-                  <span class="text-muted" style="font-size:0.8rem">✅ נבחר:</span>
-                  <img [src]="hintPreview" style="max-height:60px;border-radius:4px" />
-                </div>
-              } @else if (editingMission()?.autoHintOnApproval) {
-                <div class="current-hint-preview">
-                  <span class="text-muted" style="font-size:0.8rem">נוכחי:</span>
-                  <img [src]="editingMission()!.autoHintOnApproval" style="max-height:60px;border-radius:4px" />
-                </div>
-              }
-            </div>
+
+            @if (form.hintMode === 'auto') {
+              <p class="text-muted" style="font-size:0.82rem;margin:0.5rem 0 0.75rem">
+                הרמז יישלח אוטומטית לקבוצה ברגע שתאשר את תשובתה.
+              </p>
+            }
+            @if (form.hintMode === 'manual') {
+              <p class="text-muted" style="font-size:0.82rem;margin:0.5rem 0 0.75rem">
+                הרמז שמור במשימה — תשלח אותו ידנית מדף התשובות כשתחליט.
+              </p>
+            }
+
+            @if (form.hintMode !== 'none') {
+              <div class="form-group">
+                <label>כותרת הרמז</label>
+                <input [(ngModel)]="form.autoHintTitle" placeholder="לדוגמה: רמז 1 — ניווט לכיכר פריז" />
+              </div>
+              <div class="form-group">
+                <label>תמונת הרמז</label>
+                <input type="file" accept="image/*" (change)="onHintSelect($event)" />
+                @if (hintPreview) {
+                  <div class="current-hint-preview">
+                    <span class="text-muted" style="font-size:0.8rem">✅ נבחר:</span>
+                    <img [src]="hintPreview" style="max-height:60px;border-radius:4px" />
+                  </div>
+                } @else if (editingMission()?.autoHintOnApproval) {
+                  <div class="current-hint-preview">
+                    <span class="text-muted" style="font-size:0.8rem">נוכחי:</span>
+                    <img [src]="editingMission()!.autoHintOnApproval" style="max-height:60px;border-radius:4px" />
+                  </div>
+                }
+              </div>
+            }
           </div>
 
           <div class="flex gap-1 mt-2">
@@ -182,8 +204,16 @@ interface MissionForm {
       border: 1px solid var(--border); border-radius: 8px;
       padding: 1rem; margin-top: 0.5rem; background: #f8fafc;
     }
-    .hint-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem; }
+    .hint-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
     .hint-section-header h4 { margin: 0; }
+    .hint-mode-tabs { display:flex; gap:0.4rem; margin-bottom:0.25rem; }
+    .hint-mode-tab {
+      flex:1; padding:0.35rem 0.5rem; border-radius:6px; border:1.5px solid var(--border);
+      background:none; cursor:pointer; font-family:inherit; font-size:0.82rem; font-weight:600;
+      transition:all 0.15s;
+      &.active { background:var(--primary); border-color:var(--primary); color:#fff; }
+      &:not(.active):hover { background:var(--bg); }
+    }
     .current-hint-preview { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
 
     .missions-list { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -252,7 +282,7 @@ export class AdminMissionsComponent implements OnInit {
   }
 
   private emptyForm(): MissionForm {
-    return { order: 1, title: '', type: 'text', delivery: 'digital', content: '', autoHintTitle: '' };
+    return { order: 1, title: '', type: 'text', delivery: 'digital', content: '', autoHintTitle: '', hintMode: 'none' };
   }
 
   openCreate() {
@@ -274,7 +304,8 @@ export class AdminMissionsComponent implements OnInit {
       type:          mission.type,
       delivery:      (mission as any).delivery ?? 'digital',
       content:       mission.content,
-      autoHintTitle: (mission as any).autoHintTitle ?? '',
+      autoHintTitle: mission.autoHintTitle ?? '',
+      hintMode:      mission.hintMode ?? 'none',
     };
     this.editingMission.set(mission);
     this.mediaFile = null;
@@ -322,6 +353,7 @@ export class AdminMissionsComponent implements OnInit {
     fd.append('delivery',      this.form.delivery);
     fd.append('content',       this.form.content);
     fd.append('autoHintTitle', this.form.autoHintTitle);
+    fd.append('hintMode',      this.form.hintMode);
     if (this.mediaFile) fd.append('media', this.mediaFile);
     if (this.hintFile)  fd.append('hint',  this.hintFile);
 

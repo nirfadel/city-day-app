@@ -28,7 +28,7 @@ export const getMission = async (req: Request, res: Response) => {
 
 // POST /api/missions  [admin]
 export const createMission = async (req: Request, res: Response) => {
-  const { order, title, type, delivery, content, hints, autoHintTitle } = req.body;
+  const { order, title, type, delivery, content, hints, autoHintTitle, hintMode } = req.body;
   const files = req.files as Record<string, Express.Multer.File[]> | undefined;
 
   const mediaUrl             = files?.media?.[0] ? fileUrl(req, files.media[0].filename) : undefined;
@@ -44,6 +44,7 @@ export const createMission = async (req: Request, res: Response) => {
     hints: hints ? JSON.parse(hints) : [],
     autoHintOnApproval,
     autoHintTitle: autoHintTitle ?? '',
+    hintMode: hintMode ?? 'none',
   });
 
   created(res, mission);
@@ -51,7 +52,7 @@ export const createMission = async (req: Request, res: Response) => {
 
 // PUT /api/missions/:id  [admin]
 export const updateMission = async (req: Request, res: Response) => {
-  const { order, title, type, delivery, content, autoHintTitle } = req.body;
+  const { order, title, type, delivery, content, autoHintTitle, hintMode } = req.body;
   const files = req.files as Record<string, Express.Multer.File[]> | undefined;
 
   const update: Record<string, unknown> = {
@@ -61,6 +62,7 @@ export const updateMission = async (req: Request, res: Response) => {
     ...(delivery      !== undefined && { delivery }),
     ...(content       !== undefined && { content }),
     ...(autoHintTitle !== undefined && { autoHintTitle }),
+    ...(hintMode      !== undefined && { hintMode }),
   };
 
   if (files?.media?.[0]) update.mediaUrl           = fileUrl(req, files.media[0].filename);

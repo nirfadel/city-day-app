@@ -14,7 +14,6 @@ import { IGroup, IMission, ISubmission } from '../../../../../../server/src/type
     <div>
       <div class="flex justify-between items-center" style="margin-bottom:1.5rem">
         <h2>📥 תשובות</h2>
-        <!-- Filter -->
         <select [(ngModel)]="filter" (ngModelChange)="load()" style="padding:0.4rem;border-radius:6px;border:1px solid var(--border)">
           <option value="">הכל</option>
           <option value="pending">ממתין</option>
@@ -26,16 +25,11 @@ import { IGroup, IMission, ISubmission } from '../../../../../../server/src/type
       @for (sub of submissions(); track sub._id) {
         <div class="card sub-card">
           <div class="sub-header">
-            <!-- Group dot -->
             <span class="group-dot" [style.background]="groupColor(sub)"></span>
             <strong>{{ groupName(sub) }}</strong>
             <span class="text-muted">| {{ sub.submittedBy }}</span>
-            <span class="text-muted" style="font-size:0.8rem">
-              🎯 {{ missionTitle(sub) }}
-            </span>
-            <span class="badge ms-auto" [class]="'badge-' + sub.status">
-              {{ labels[sub.status] }}
-            </span>
+            <span class="text-muted" style="font-size:0.8rem">🎯 {{ missionTitle(sub) }}</span>
+            <span class="badge ms-auto" [class]="'badge-' + sub.status">{{ labels[sub.status] }}</span>
           </div>
 
           <!-- Answer -->
@@ -68,13 +62,45 @@ import { IGroup, IMission, ISubmission } from '../../../../../../server/src/type
                 </div>
               }
               <div class="flex gap-1">
-                <button class="btn btn-success btn-sm" (click)="review(sub._id, 'approved')">
-                  ✅ אשר
-                </button>
-                <button class="btn btn-danger btn-sm" (click)="review(sub._id, 'rejected')">
-                  ❌ דחה
+                <button class="btn btn-success btn-sm" (click)="review(sub._id, 'approved')">✅ אשר</button>
+                <button class="btn btn-danger btn-sm" (click)="review(sub._id, 'rejected')">❌ דחה</button>
+                <button class="btn btn-sm hint-btn" (click)="toggleHintPanel(sub._id)">
+                  💡 {{ hintPanelOpen === sub._id ? 'סגור' : 'שלח רמז' }}
                 </button>
               </div>
+            </div>
+          } @else {
+            <!-- For approved/rejected — hint button separately -->
+            <div class="mt-1">
+              <button class="btn btn-sm hint-btn" (click)="toggleHintPanel(sub._id)">
+                💡 {{ hintPanelOpen === sub._id ? 'סגור רמז' : 'שלח רמז לקבוצה' }}
+              </button>
+            </div>
+          }
+
+          <!-- Inline hint panel -->
+          @if (hintPanelOpen === sub._id) {
+            <div class="hint-panel">
+              <div class="form-group">
+                <label>כותרת הרמז</label>
+                <input [(ngModel)]="hintForm.title" placeholder="לדוגמה: רמז 2 — כיוון הבא" />
+              </div>
+              <div class="form-group">
+                <label>טקסט (אופציונלי)</label>
+                <textarea [(ngModel)]="hintForm.content" rows="2" placeholder="פרטי הרמז..."></textarea>
+              </div>
+              <div class="form-group">
+                <label>תמונה (אופציונלי)</label>
+                <input type="file" accept="image/*" (change)="onHintImageSelect($event)" />
+                @if (hintImagePreview) {
+                  <img [src]="hintImagePreview" style="max-height:70px;border-radius:6px;margin-top:0.4rem" />
+                }
+              </div>
+              <button class="btn btn-primary btn-sm"
+                      [disabled]="sendingHint() || (!hintForm.content.trim() && !hintImageFile)"
+                      (click)="sendHint(sub)">
+                {{ sendingHint() ? 'שולח...' : '💡 שלח רמז' }}
+              </button>
             </div>
           }
 
@@ -105,6 +131,12 @@ import { IGroup, IMission, ISubmission } from '../../../../../../server/src/type
     .feedback-display { background:#f0fdf4; padding:0.5rem; border-radius:6px; font-size:0.9rem; }
     .ms-auto { margin-right:auto; }
     .score-input { max-width: 120px; }
+    .hint-btn { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+    .hint-panel {
+      margin-top: 0.75rem; padding: 0.75rem;
+      background: #faf5ff; border: 1px solid #e9d5ff;
+      border-radius: 8px;
+    }
     @media (max-width: 768px) {
       .score-input { max-width: 100%; }
       .review-area .flex { flex-direction: column; }
@@ -119,10 +151,16 @@ export class SubmissionsComponent implements OnInit {
 
   submissions    = signal<ISubmission[]>([]);
   scoringEnabled = signal(false);
+  sendingHint    = signal(false);
   filter      = 'pending';
   feedbacks: Record<string, string> = {};
   scores: Record<string, number>    = {};
   labels = { pending: '⏳ ממתין', approved: '✅ אושר', rejected: '❌ נדחה' };
+
+  hintPanelOpen: string | null = null;
+  hintForm = { title: '', content: '' };
+  hintImageFile:    File | null = null;
+  hintImagePreview: string | null = null;
 
   ngOnInit() {
     this.api.get<{ scoringEnabled: boolean }>('settings').subscribe(s => {
@@ -149,6 +187,10 @@ export class SubmissionsComponent implements OnInit {
     return typeof sub.groupId === 'object' ? (sub.groupId as IGroup).name : '';
   }
 
+  groupId(sub: ISubmission): string {
+    return typeof sub.groupId === 'object' ? (sub.groupId as IGroup)._id : sub.groupId as string;
+  }
+
   missionTitle(sub: ISubmission): string {
     return typeof sub.missionId === 'object' ? (sub.missionId as IMission).title : '';
   }
@@ -165,6 +207,47 @@ export class SubmissionsComponent implements OnInit {
     return [];
   }
 
+  toggleHintPanel(subId: string) {
+    if (this.hintPanelOpen === subId) {
+      this.hintPanelOpen = null;
+    } else {
+      this.hintPanelOpen    = subId;
+      this.hintForm         = { title: '', content: '' };
+      this.hintImageFile    = null;
+      this.hintImagePreview = null;
+    }
+  }
+
+  onHintImageSelect(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0] ?? null;
+    this.hintImageFile    = file;
+    this.hintImagePreview = file ? URL.createObjectURL(file) : null;
+  }
+
+  sendHint(sub: ISubmission) {
+    const gId = this.groupId(sub);
+    if (!gId) return;
+    this.sendingHint.set(true);
+
+    const fd = new FormData();
+    fd.append('groupId', gId);
+    fd.append('type',    'hint');
+    fd.append('title',   this.hintForm.title || 'רמז חדש!');
+    fd.append('content', this.hintForm.content || 'הנה הרמז הבא שלכם 👇');
+    if (this.hintImageFile) fd.append('media', this.hintImageFile);
+
+    this.api.postForm('messages', fd).subscribe({
+      next: () => {
+        this.toast.success('💡 הרמז נשלח!');
+        this.hintPanelOpen    = null;
+        this.hintImageFile    = null;
+        this.hintImagePreview = null;
+        this.sendingHint.set(false);
+      },
+      error: () => { this.toast.error('שגיאה בשליחת הרמז'); this.sendingHint.set(false); },
+    });
+  }
+
   review(id: string, status: 'approved' | 'rejected') {
     this.api.put<ISubmission>(`submissions/${id}/review`, {
       status,
@@ -172,7 +255,6 @@ export class SubmissionsComponent implements OnInit {
       score: this.scores[id] || 0,
     }).subscribe({
       next: updated => {
-        // If filtered to pending — remove from view. Otherwise update in place.
         if (this.filter === 'pending') {
           this.submissions.update(s => s.filter(x => x._id !== id));
         } else {

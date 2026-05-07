@@ -65,6 +65,7 @@ export interface MissionDoc extends Document {
   unlockedForGroups: mongoose.Types.ObjectId[];  // per-group unlock
   autoHintOnApproval?: string;
   autoHintTitle?: string;
+  hintMode?: 'auto' | 'manual' | 'none';
 }
 
 const HintSchema = new Schema<HintDoc>({
@@ -86,6 +87,7 @@ const MissionSchema = new Schema<MissionDoc>({
   unlockedForGroups:   [{ type: Schema.Types.ObjectId, ref: 'Group' }],
   autoHintOnApproval:  { type: String },
   autoHintTitle:       { type: String },
+  hintMode:            { type: String, enum: ['auto', 'manual', 'none'], default: 'none' },
 }, { timestamps: true });
 
 export const Mission = mongoose.model<MissionDoc>('Mission', MissionSchema);

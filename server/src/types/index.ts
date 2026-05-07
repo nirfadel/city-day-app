@@ -47,6 +47,7 @@ export interface IMission {
   createdAt: Date;
   autoHintOnApproval?: string;
   autoHintTitle?: string;
+  hintMode?: 'auto' | 'manual' | 'none';
 }
 
 export interface ISubmission {
