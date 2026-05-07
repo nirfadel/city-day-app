@@ -65,8 +65,12 @@ import { IMission, ISubmission } from '../../../../../../server/src/types';
                          (change)="onFileSelect($event, mission._id)" />
                   @if (previews[mission._id]?.length) {
                     <div class="img-preview-strip">
-                      @for (url of previews[mission._id]; track url) {
-                        <img [src]="url" class="img-thumb" />
+                      @for (url of previews[mission._id]; track url; let i = $index) {
+                        @if (isVideo(files[mission._id]?.[i]?.name)) {
+                          <video [src]="url" class="img-thumb" muted playsinline controls></video>
+                        } @else {
+                          <img [src]="url" class="img-thumb" />
+                        }
                       }
                     </div>
                   }
@@ -74,13 +78,17 @@ import { IMission, ISubmission } from '../../../../../../server/src/types';
               } @else if (mission.type === 'photo') {
                 <!-- Digital photo mission -->
                 <div class="form-group">
-                  <label>📷 העלו עד 3 תמונות</label>
+                  <label>📷 העלו עד 3 תמונות / סרטונים</label>
                   <input type="file" accept="image/*,video/*" multiple
                          (change)="onFileSelect($event, mission._id)" />
                   @if (previews[mission._id]?.length) {
                     <div class="img-preview-strip">
-                      @for (url of previews[mission._id]; track url) {
-                        <img [src]="url" class="img-thumb" />
+                      @for (url of previews[mission._id]; track url; let i = $index) {
+                        @if (isVideo(files[mission._id]?.[i]?.name)) {
+                          <video [src]="url" class="img-thumb" muted playsinline controls></video>
+                        } @else {
+                          <img [src]="url" class="img-thumb" />
+                        }
                       }
                     </div>
                   }
@@ -188,6 +196,13 @@ export class MissionsComponent implements OnInit {
 
   hasApprovedSubmission(missionId: string): boolean {
     return this.submissions().some(x => this.missionIdOf(x) === missionId && x.status === 'approved');
+  }
+
+  isVideo(filename?: string): boolean {
+    if (!filename) return false;
+    return ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'].includes(
+      filename.slice(filename.lastIndexOf('.')).toLowerCase()
+    );
   }
 
   onFileSelect(event: Event, missionId: string) {

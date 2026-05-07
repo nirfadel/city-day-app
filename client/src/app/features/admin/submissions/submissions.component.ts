@@ -45,7 +45,11 @@ import { IGroup, IMission, ISubmission } from '../../../../../../server/src/type
           @if (imageUrls(sub).length) {
             <div class="answer-img-grid">
               @for (url of imageUrls(sub); track url) {
-                <img [src]="url" class="answer-img" />
+                @if (isVideo(url)) {
+                  <video [src]="url" class="answer-img" controls playsinline></video>
+                } @else {
+                  <img [src]="url" class="answer-img" />
+                }
               }
             </div>
           }
@@ -147,6 +151,12 @@ export class SubmissionsComponent implements OnInit {
 
   missionTitle(sub: ISubmission): string {
     return typeof sub.missionId === 'object' ? (sub.missionId as IMission).title : '';
+  }
+
+  isVideo(url: string): boolean {
+    return ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'].some(ext =>
+      url.toLowerCase().includes(ext)
+    );
   }
 
   imageUrls(sub: ISubmission): string[] {
