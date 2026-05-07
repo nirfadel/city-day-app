@@ -21,9 +21,8 @@ export const initSocket = (httpServer: HttpServer): Server => {
     }) => {
       socket.join(`group-${groupId}`);
       console.log(`[Socket] ${nickname} joined group-${groupId}`);
-      // USER_JOINED is emitted by auth.controller after DB write — re-emit here
-      // only for reconnections (page reload) where controller won't fire again
-      io.to('admin-room').emit(SOCKET_EVENTS.USER_JOINED, { nickname, groupName, groupColor });
+      // USER_JOINED is emitted by auth.controller on first join only.
+      // Do NOT re-emit here — reconnects would spam the admin with notifications.
     });
 
     // Admin joins admin room

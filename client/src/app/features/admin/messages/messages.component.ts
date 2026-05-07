@@ -25,16 +25,38 @@ import { IGroup, IMessage } from '../../../../../../server/src/types';
           </select>
         </div>
 
-        <div class="form-group">
-          <label>כותרת (אופציונלי)</label>
-          <input [(ngModel)]="form.title" placeholder="למשל: עדכון חשוב!" />
+        <!-- Type selector -->
+        <div class="type-tabs">
+          <button class="type-tab" [class.active]="form.type === 'broadcast'" (click)="form.type = 'broadcast'">
+            📢 הודעה
+          </button>
+          <button class="type-tab" [class.active]="form.type === 'hint'" (click)="form.type = 'hint'">
+            💡 רמז
+          </button>
         </div>
 
         <div class="form-group">
-          <label>הודעה</label>
-          <textarea [(ngModel)]="form.content" rows="3"
-                    placeholder="כתוב כאן את ההודעה..."></textarea>
+          <label>כותרת (אופציונלי)</label>
+          <input [(ngModel)]="form.title" placeholder="למשל: רמז 2 — המשך הדרך" />
         </div>
+
+        <div class="form-group">
+          <label>{{ form.type === 'hint' ? 'טקסט הרמז' : 'הודעה' }}</label>
+          <textarea [(ngModel)]="form.content" rows="3"
+                    placeholder="{{ form.type === 'hint' ? 'הוראות או רמז טקסטואלי...' : 'כתוב כאן את ההודעה...' }}"></textarea>
+        </div>
+
+        @if (form.type === 'hint') {
+          <div class="form-group">
+            <label>תמונת רמז (אופציונלי)</label>
+            <input type="file" accept="image/*" (change)="onImageSelect($event)" />
+            @if (imagePreview) {
+              <div style="margin-top:0.5rem">
+                <img [src]="imagePreview" style="max-height:80px;border-radius:6px;border:1px solid var(--border)" />
+              </div>
+            }
+          </div>
+        }
 
         <!-- Quick templates -->
         <div class="templates">
@@ -68,12 +90,24 @@ import { IGroup, IMessage } from '../../../../../../server/src/types';
             </div>
           </div>
           <p class="msg-content">{{ msg.content }}</p>
+          @if (msg.mediaUrl) {
+            <img [src]="msg.mediaUrl" class="msg-img" />
+          }
         </div>
       }
     </div>
   `,
   styles: [`
     .form-card { margin-bottom: 1rem; }
+    .type-tabs { display:flex; gap:0.5rem; margin-bottom:1rem; }
+    .type-tab {
+      flex:1; padding:0.5rem; border-radius:8px; border:1.5px solid var(--border);
+      background:none; cursor:pointer; font-family:inherit; font-weight:600; font-size:0.9rem;
+      transition:all 0.15s;
+      &.active { background:var(--primary); border-color:var(--primary); color:#fff; }
+      &:not(.active):hover { background:var(--bg); }
+    }
+    .msg-img { max-width:100%; border-radius:8px; margin-top:0.5rem; max-height:200px; object-fit:contain; }
     .templates { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.25rem; align-items: center; }
     .templates-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
     .template-btn {
@@ -99,7 +133,9 @@ export class AdminMessagesComponent implements OnInit {
   messages = signal<IMessage[]>([]);
   sending  = signal(false);
 
-  form = { groupId: '', title: '', content: '' };
+  form = { groupId: '', title: '', content: '', type: 'broadcast' };
+  imageFile:    File | null = null;
+  imagePreview: string | null = null;
 
   templates = [
     { label: '🔥 כל הכבוד!',      title: 'כל הכבוד!',     content: 'אתם עושים עבודה מצוינת! המשיכו כך 💪' },
@@ -122,18 +158,29 @@ export class AdminMessagesComponent implements OnInit {
     this.form.content = t.content;
   }
 
+  onImageSelect(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0] ?? null;
+    this.imageFile = file;
+    this.imagePreview = file ? URL.createObjectURL(file) : null;
+  }
+
   send() {
     if (!this.form.content.trim()) return;
     this.sending.set(true);
-    this.api.post<IMessage>('messages', {
-      groupId: this.form.groupId || null,
-      type:    this.form.groupId ? 'broadcast' : 'broadcast',
-      title:   this.form.title,
-      content: this.form.content,
-    }).subscribe({
+
+    const fd = new FormData();
+    fd.append('groupId', this.form.groupId || '');
+    fd.append('type',    this.form.type);
+    fd.append('title',   this.form.title);
+    fd.append('content', this.form.content);
+    if (this.imageFile) fd.append('media', this.imageFile);
+
+    this.api.postForm<IMessage>('messages', fd).subscribe({
       next: msg => {
         this.messages.update(m => [msg, ...m]);
-        this.form = { groupId: '', title: '', content: '' };
+        this.form = { groupId: '', title: '', content: '', type: 'broadcast' };
+        this.imageFile    = null;
+        this.imagePreview = null;
         this.sending.set(false);
         this.toast.success('ההודעה נשלחה!');
       },

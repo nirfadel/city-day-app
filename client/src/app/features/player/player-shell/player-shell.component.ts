@@ -1,7 +1,8 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { Subject, takeUntil } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { SocketService } from '../../../core/services/socket.service';
 import { ToastService } from '../../../shared/services/toast.service';
@@ -146,15 +147,16 @@ import { ToastService } from '../../../shared/services/toast.service';
     }
   `],
 })
-export class PlayerShellComponent implements OnInit {
+export class PlayerShellComponent implements OnInit, OnDestroy {
   auth   = inject(AuthService);
   socket = inject(SocketService);
   toast  = inject(ToastService);
   router = inject(Router);
 
-  gameCompleted = signal(false);
-  unreadCount   = signal(0);
+  gameCompleted  = signal(false);
+  unreadCount    = signal(0);
   confettiPieces = this.generateConfetti();
+  private destroy$ = new Subject<void>();
 
   private generateConfetti() {
     const colors = ['#f4c430','#ff8c00','#e74c3c','#3498db','#2ecc71','#9b59b6','#1abc9c','#e91e63'];
@@ -175,32 +177,37 @@ export class PlayerShellComponent implements OnInit {
       this.socket.joinAsPlayer(user.groupId!, user.nickname, user.groupName, user.groupColor);
     }
 
-    this.socket.onMissionUnlocked().subscribe(mission => {
+    this.socket.onMissionUnlocked().pipe(takeUntil(this.destroy$)).subscribe(mission => {
       this.toast.info(`🎯 משימה חדשה: ${mission.title}`);
     });
-    this.socket.onSubmissionReviewed().subscribe(({ status, adminFeedback }) => {
+    this.socket.onSubmissionReviewed().pipe(takeUntil(this.destroy$)).subscribe(({ status, adminFeedback }) => {
       if (status === 'approved') this.toast.success('✅ תשובתכם אושרה!');
       else this.toast.warning(`❌ תשובה נדחתה: ${adminFeedback || ''}`);
     });
-    this.socket.onNewMessage().subscribe(msg => {
+    this.socket.onNewMessage().pipe(takeUntil(this.destroy$)).subscribe(msg => {
       this.unreadCount.update(n => n + 1);
       this.toast.info(`💬 ${msg.title || 'הודעה חדשה'}`);
     });
 
-    // Reset badge when navigating to messages
     this.router.events.pipe(
-      filter(e => e instanceof NavigationEnd)
+      filter(e => e instanceof NavigationEnd),
+      takeUntil(this.destroy$)
     ).subscribe((e: any) => {
       if (e.urlAfterRedirects?.includes('/play/messages')) {
         this.unreadCount.set(0);
       }
     });
-    this.socket.onHintUnlocked().subscribe(({ hint }) => {
+    this.socket.onHintUnlocked().pipe(takeUntil(this.destroy$)).subscribe(({ hint }) => {
       this.toast.info(`💡 רמז חדש: ${hint.text || 'בדקו את הרמזים!'}`);
     });
-    this.socket.onGameCompleted().subscribe(() => {
+    this.socket.onGameCompleted().pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.confettiPieces = this.generateConfetti();
       this.gameCompleted.set(true);
     });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }
