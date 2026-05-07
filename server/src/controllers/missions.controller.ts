@@ -29,6 +29,10 @@ export const getMission = async (req: Request, res: Response) => {
 // POST /api/missions  [admin]
 export const createMission = async (req: Request, res: Response) => {
   const { order, title, type, delivery, content, hints, autoHintTitle, hintMode } = req.body;
+
+  if (!content?.trim()) return fail(res, 'תוכן המשימה הוא שדה חובה');
+  if (!title?.trim())   return fail(res, 'כותרת המשימה היא שדה חובה');
+
   const files = req.files as Record<string, Express.Multer.File[]> | undefined;
 
   const mediaUrl             = files?.media?.[0] ? fileUrl(req, files.media[0].filename) : undefined;
