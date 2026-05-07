@@ -18,9 +18,11 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.webp'];
+  const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.webp', '.heic', '.heif'];
   const ext = path.extname(file.originalname).toLowerCase();
-  if (allowed.includes(ext)) cb(null, true);
+  // also allow by mimetype for files with missing/wrong extension
+  const allowedMime = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'];
+  if (allowed.includes(ext) || allowedMime.includes(file.mimetype)) cb(null, true);
   else cb(new Error(`File type not allowed: ${ext}`));
 };
 

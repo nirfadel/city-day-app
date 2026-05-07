@@ -35,9 +35,14 @@ router.get   ('/groups/:id/members',  requireAdmin, Groups.getGroupMembers);
 router.get   ('/missions',                            requireAuth,  Missions.getMissions);
 router.get   ('/missions/:id',                        requireAuth,  Missions.getMission);
 const missionUpload = upload.fields([{ name: 'media', maxCount: 1 }, { name: 'hint', maxCount: 1 }]);
-router.post  ('/missions',                            requireAdmin, missionUpload, Missions.createMission);
+const missionUploadMiddleware: import('express').RequestHandler = (req, res, next) =>
+  missionUpload(req, res, (err) => {
+    if (err) { console.error('[Upload error]', err.message); }
+    next(); // continue even if a file was rejected — body fields are still parsed
+  });
+router.post  ('/missions',                            requireAdmin, missionUploadMiddleware, Missions.createMission);
 router.put   ('/missions/reorder',                    requireAdmin, Missions.reorderMissions);
-router.put   ('/missions/:id',                        requireAdmin, missionUpload, Missions.updateMission);
+router.put   ('/missions/:id',                        requireAdmin, missionUploadMiddleware, Missions.updateMission);
 router.delete('/missions/:id/hint',                   requireAdmin, Missions.removeAutoHint);
 router.delete('/missions/:id',                        requireAdmin, Missions.deleteMission);
 router.post  ('/missions/:id/unlock',                 requireAdmin, Missions.unlockMission);
