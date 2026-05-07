@@ -80,8 +80,9 @@ import { ToastService } from '../../../shared/services/toast.service';
     }
     .topbar-user { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; }
     .group-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-    .main-content { flex: 1; overflow-y: auto; padding: 1rem; }
+    .main-content { flex: 1; overflow-y: auto; padding: 1rem; padding-bottom: 5rem; }
     .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
       display: flex;
       background: var(--surface);
       border-top: 1px solid var(--border);
