@@ -66,7 +66,7 @@ export const updateMission = async (req: Request, res: Response) => {
   if (files?.media?.[0]) update.mediaUrl           = fileUrl(req, files.media[0].filename);
   if (files?.hint?.[0])  update.autoHintOnApproval = fileUrl(req, files.hint[0].filename);
 
-  const mission = await Mission.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
+  const mission = await Mission.findByIdAndUpdate(req.params.id, update, { new: true });
   if (!mission) return fail(res, 'Mission not found', 404);
   ok(res, mission);
 };
