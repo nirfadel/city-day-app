@@ -29,7 +29,7 @@ export const sendMessage = async (req: Request, res: Response) => {
   const { groupId, type, title, content } = req.body;
   if (!content?.trim()) return fail(res, 'Content is required');
 
-  const mediaUrl = req.file ? fileUrl(req, req.file.filename) : undefined;
+  const mediaUrl = req.file ? fileUrl(req, req.file.filename) : (req.body.mediaUrl || undefined);
 
   const message = await Message.create({
     groupId: groupId || null,

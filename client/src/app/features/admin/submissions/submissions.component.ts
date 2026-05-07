@@ -70,7 +70,6 @@ import { IGroup, IMission, ISubmission } from '../../../../../../server/src/type
               </div>
             </div>
           } @else {
-            <!-- For approved/rejected — hint button separately -->
             <div class="mt-1">
               <button class="btn btn-sm hint-btn" (click)="toggleHintPanel(sub._id)">
                 💡 {{ hintPanelOpen === sub._id ? 'סגור רמז' : 'שלח רמז לקבוצה' }}
@@ -81,6 +80,23 @@ import { IGroup, IMission, ISubmission } from '../../../../../../server/src/type
           <!-- Inline hint panel -->
           @if (hintPanelOpen === sub._id) {
             <div class="hint-panel">
+
+              <!-- If mission has a saved manual hint — show it as quick-send -->
+              @if (missionHintMode(sub) === 'manual' && missionHintUrl(sub)) {
+                <div class="saved-hint-row">
+                  <img [src]="missionHintUrl(sub)" class="saved-hint-thumb" />
+                  <div class="saved-hint-info">
+                    <strong>{{ missionHintTitle(sub) || 'רמז שמור' }}</strong>
+                    <span class="text-muted" style="font-size:0.8rem">רמז מוגדר מראש במשימה</span>
+                  </div>
+                  <button class="btn btn-primary btn-sm" [disabled]="sendingHint()"
+                          (click)="sendSavedHint(sub)">
+                    {{ sendingHint() ? '...' : '💡 שלח' }}
+                  </button>
+                </div>
+                <div class="hint-divider">או שלח רמז מותאם אישית</div>
+              }
+
               <div class="form-group">
                 <label>כותרת הרמז</label>
                 <input [(ngModel)]="hintForm.title" placeholder="לדוגמה: רמז 2 — כיוון הבא" />
@@ -136,6 +152,23 @@ import { IGroup, IMission, ISubmission } from '../../../../../../server/src/type
       margin-top: 0.75rem; padding: 0.75rem;
       background: #faf5ff; border: 1px solid #e9d5ff;
       border-radius: 8px;
+    }
+    .saved-hint-row {
+      display: flex; align-items: center; gap: 0.75rem;
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      border-radius: 8px; padding: 0.6rem 0.75rem; margin-bottom: 0.75rem;
+    }
+    .saved-hint-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+    .saved-hint-info { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+    .hint-divider {
+      text-align: center; font-size: 0.78rem; color: var(--text-muted);
+      margin: 0.5rem 0; position: relative;
+      &::before, &::after {
+        content: ''; position: absolute; top: 50%; width: 35%; height: 1px;
+        background: var(--border);
+      }
+      &::before { right: 0; }
+      &::after  { left: 0; }
     }
     @media (max-width: 768px) {
       .score-input { max-width: 100%; }
@@ -195,6 +228,18 @@ export class SubmissionsComponent implements OnInit {
     return typeof sub.missionId === 'object' ? (sub.missionId as IMission).title : '';
   }
 
+  missionHintMode(sub: ISubmission): string {
+    return typeof sub.missionId === 'object' ? (sub.missionId as IMission).hintMode ?? 'none' : 'none';
+  }
+
+  missionHintUrl(sub: ISubmission): string | undefined {
+    return typeof sub.missionId === 'object' ? (sub.missionId as IMission).autoHintOnApproval : undefined;
+  }
+
+  missionHintTitle(sub: ISubmission): string {
+    return typeof sub.missionId === 'object' ? (sub.missionId as IMission).autoHintTitle ?? '' : '';
+  }
+
   isVideo(url: string): boolean {
     return ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'].some(ext =>
       url.toLowerCase().includes(ext)
@@ -222,6 +267,30 @@ export class SubmissionsComponent implements OnInit {
     const file = (e.target as HTMLInputElement).files?.[0] ?? null;
     this.hintImageFile    = file;
     this.hintImagePreview = file ? URL.createObjectURL(file) : null;
+  }
+
+  sendSavedHint(sub: ISubmission) {
+    const gId      = this.groupId(sub);
+    const hintUrl  = this.missionHintUrl(sub);
+    const hintTitle = this.missionHintTitle(sub) || 'רמז חדש!';
+    if (!gId || !hintUrl) return;
+    this.sendingHint.set(true);
+
+    const fd = new FormData();
+    fd.append('groupId', gId);
+    fd.append('type',    'hint');
+    fd.append('title',   hintTitle);
+    fd.append('content', 'הנה הרמז הבא שלכם 👇');
+    fd.append('mediaUrl', hintUrl);   // pass existing URL — server uses it directly
+
+    this.api.postForm('messages', fd).subscribe({
+      next: () => {
+        this.toast.success('💡 הרמז נשלח!');
+        this.hintPanelOpen = null;
+        this.sendingHint.set(false);
+      },
+      error: () => { this.toast.error('שגיאה בשליחת הרמז'); this.sendingHint.set(false); },
+    });
   }
 
   sendHint(sub: ISubmission) {

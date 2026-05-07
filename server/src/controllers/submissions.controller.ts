@@ -54,7 +54,7 @@ export const getSubmissions = async (req: Request, res: Response) => {
   if (missionId) filter.missionId = missionId;
 
   const submissions = await Submission.find(filter)
-    .populate('missionId', 'title order type')
+    .populate('missionId', 'title order type autoHintOnApproval autoHintTitle hintMode')
     .populate('groupId', 'name color emoji')
     .sort({ submittedAt: -1 });
 
