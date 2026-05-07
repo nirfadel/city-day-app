@@ -135,6 +135,11 @@ export const reorderMissions = async (req: Request, res: Response) => {
   const items: { id: string; order: number }[] = req.body;
   if (!Array.isArray(items)) return fail(res, 'Expected array of {id, order}');
 
+  // Step 1: set temporary negative orders to avoid unique-index conflicts mid-update
+  await Promise.all(
+    items.map(({ id }, idx) => Mission.findByIdAndUpdate(id, { order: -(idx + 1) }))
+  );
+  // Step 2: set final orders
   await Promise.all(
     items.map(({ id, order }) => Mission.findByIdAndUpdate(id, { order }))
   );
