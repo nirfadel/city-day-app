@@ -10,8 +10,9 @@ export const submitAnswer = async (req: Request, res: Response) => {
   const { missionId, answerText } = req.body;
   const groupId = (req.user?.groupId as any)?._id || req.user?.groupId;
 
-  if (!missionId)              return fail(res, 'Mission ID required');
-  if (!answerText && !req.file) return fail(res, 'Answer text or image required');
+  const filesArray = Array.isArray(req.files) ? (req.files as Express.Multer.File[]) : [];
+  if (!missionId)                             return fail(res, 'Mission ID required');
+  if (!answerText && filesArray.length === 0) return fail(res, 'Answer text or image required');
 
   const mission = await Mission.findById(missionId);
   if (!mission) return fail(res, 'Mission not found', 404);
@@ -22,14 +23,16 @@ export const submitAnswer = async (req: Request, res: Response) => {
   const existing = await Submission.findOne({ missionId, groupId, status: 'pending' });
   if (existing) return fail(res, 'Your group already has a pending submission for this mission');
 
-  const answerImageUrl = req.file ? fileUrl(req, req.file.filename) : undefined;
+  const answerImageUrls = filesArray.length > 0
+    ? filesArray.map(f => fileUrl(req, f.filename))
+    : undefined;
 
   const submission = await Submission.create({
     missionId,
     groupId,
     submittedBy: req.user!.nickname,
     answerText,
-    answerImageUrl,
+    answerImageUrls,
     status: 'pending',
   });
 

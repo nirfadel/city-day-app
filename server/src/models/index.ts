@@ -100,6 +100,7 @@ export interface SubmissionDoc extends Document {
   submittedBy: string;
   answerText?: string;
   answerImageUrl?: string;
+  answerImageUrls?: string[];
   status: 'pending' | 'approved' | 'rejected';
   adminFeedback?: string;
   score?: number;
@@ -111,8 +112,9 @@ const SubmissionSchema = new Schema<SubmissionDoc>({
   missionId:      { type: Schema.Types.ObjectId, ref: 'Mission', required: true },
   groupId:        { type: Schema.Types.ObjectId, ref: 'Group', required: true },
   submittedBy:    { type: String, required: true },
-  answerText:     { type: String },
-  answerImageUrl: { type: String },
+  answerText:      { type: String },
+  answerImageUrl:  { type: String },
+  answerImageUrls: { type: [String] },
   status:         { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   adminFeedback:  { type: String },
   score:          { type: Number },

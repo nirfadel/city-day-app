@@ -52,7 +52,7 @@ import { IMission, ISubmission } from '../../../../../../server/src/types';
             <div class="submit-area mt-2">
 
               @if (mission.delivery === 'envelope') {
-                <!-- Envelope: text answer for the questions + optional photo -->
+                <!-- Envelope: text answer for the questions + optional photos -->
                 <div class="form-group">
                   <label>📝 תשובות לשאלות</label>
                   <textarea [(ngModel)]="answers[mission._id]"
@@ -60,16 +60,30 @@ import { IMission, ISubmission } from '../../../../../../server/src/types';
                             placeholder="כתבו את התשובות כאן..."></textarea>
                 </div>
                 <div class="form-group">
-                  <label>📷 צירוף תמונה (אופציונלי)</label>
-                  <input type="file" accept="image/*,video/*"
+                  <label>📷 צירוף תמונות (עד 3, אופציונלי)</label>
+                  <input type="file" accept="image/*,video/*" multiple
                          (change)="onFileSelect($event, mission._id)" />
+                  @if (previews[mission._id]?.length) {
+                    <div class="img-preview-strip">
+                      @for (url of previews[mission._id]; track url) {
+                        <img [src]="url" class="img-thumb" />
+                      }
+                    </div>
+                  }
                 </div>
               } @else if (mission.type === 'photo') {
                 <!-- Digital photo mission -->
                 <div class="form-group">
-                  <label>📷 העלו תמונה / סרטון</label>
-                  <input type="file" accept="image/*,video/*"
+                  <label>📷 העלו עד 3 תמונות</label>
+                  <input type="file" accept="image/*,video/*" multiple
                          (change)="onFileSelect($event, mission._id)" />
+                  @if (previews[mission._id]?.length) {
+                    <div class="img-preview-strip">
+                      @for (url of previews[mission._id]; track url) {
+                        <img [src]="url" class="img-thumb" />
+                      }
+                    </div>
+                  }
                 </div>
               } @else {
                 <!-- Digital text mission -->
@@ -110,6 +124,8 @@ import { IMission, ISubmission } from '../../../../../../server/src/types';
     }
     .envelope-icon { font-size: 1.75rem; flex-shrink: 0; }
     .submit-area { border-top: 1px solid var(--border); padding-top: 1rem; }
+    .img-preview-strip { display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.5rem; }
+    .img-thumb { width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid var(--border); }
   `],
 })
 export class MissionsComponent implements OnInit {
@@ -121,8 +137,9 @@ export class MissionsComponent implements OnInit {
   submissions = signal<ISubmission[]>([]);
   loading     = signal(true);
   submitting  = signal('');
-  answers: Record<string, string> = {};
-  files: Record<string, File> = {};
+  answers:  Record<string, string>   = {};
+  files:    Record<string, File[]>   = {};
+  previews: Record<string, string[]> = {};
 
   ngOnInit() {
     this.loadAll();
@@ -174,20 +191,22 @@ export class MissionsComponent implements OnInit {
   }
 
   onFileSelect(event: Event, missionId: string) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (file) this.files[missionId] = file;
+    const selected = Array.from((event.target as HTMLInputElement).files ?? []).slice(0, 3);
+    (this.previews[missionId] ?? []).forEach(url => URL.revokeObjectURL(url));
+    this.files[missionId]    = selected;
+    this.previews[missionId] = selected.map(f => URL.createObjectURL(f));
   }
 
   submit(mission: IMission) {
-    const text = this.answers[mission._id];
-    const file = this.files[mission._id];
-    if (!text && !file) { this.toast.warning('יש להזין תשובה או תמונה'); return; }
+    const text      = this.answers[mission._id];
+    const fileList  = this.files[mission._id] ?? [];
+    if (!text && fileList.length === 0) { this.toast.warning('יש להזין תשובה או תמונה'); return; }
 
     this.submitting.set(mission._id);
     const fd = new FormData();
     fd.append('missionId', mission._id);
     if (text) fd.append('answerText', text);
-    if (file) fd.append('image', file);
+    fileList.forEach(f => fd.append('images', f));
 
     this.api.postForm<ISubmission>('submissions', fd).subscribe({
       next: sub => {
@@ -195,6 +214,8 @@ export class MissionsComponent implements OnInit {
         this.toast.success('תשובה נשלחה! 🎉');
         delete this.answers[mission._id];
         delete this.files[mission._id];
+        (this.previews[mission._id] ?? []).forEach(url => URL.revokeObjectURL(url));
+        delete this.previews[mission._id];
         this.submitting.set('');
       },
       error: err => {

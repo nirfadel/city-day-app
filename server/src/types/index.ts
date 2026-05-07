@@ -56,6 +56,7 @@ export interface ISubmission {
   submittedBy: string;      // nickname
   answerText?: string;
   answerImageUrl?: string;
+  answerImageUrls?: string[];
   status: SubmissionStatus;
   adminFeedback?: string;
   score?: number;

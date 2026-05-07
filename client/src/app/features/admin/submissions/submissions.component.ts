@@ -42,8 +42,12 @@ import { IGroup, IMission, ISubmission } from '../../../../../../server/src/type
           @if (sub.answerText) {
             <div class="answer-text mt-1">{{ sub.answerText }}</div>
           }
-          @if (sub.answerImageUrl) {
-            <img [src]="sub.answerImageUrl" class="answer-img" />
+          @if (imageUrls(sub).length) {
+            <div class="answer-img-grid">
+              @for (url of imageUrls(sub); track url) {
+                <img [src]="url" class="answer-img" />
+              }
+            </div>
           }
 
           <!-- Review -->
@@ -91,7 +95,8 @@ import { IGroup, IMission, ISubmission } from '../../../../../../server/src/type
       background: var(--bg); padding: 0.75rem; border-radius: 8px;
       border-right: 3px solid var(--primary);
     }
-    .answer-img  { max-width:100%; border-radius:8px; margin-top:0.5rem; object-fit:contain; }
+    .answer-img-grid { display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.5rem; }
+    .answer-img  { max-width:200px; flex:1 1 150px; border-radius:8px; object-fit:contain; }
     .review-area { border-top: 1px solid var(--border); padding-top:1rem; }
     .feedback-display { background:#f0fdf4; padding:0.5rem; border-radius:6px; font-size:0.9rem; }
     .ms-auto { margin-right:auto; }
@@ -142,6 +147,12 @@ export class SubmissionsComponent implements OnInit {
 
   missionTitle(sub: ISubmission): string {
     return typeof sub.missionId === 'object' ? (sub.missionId as IMission).title : '';
+  }
+
+  imageUrls(sub: ISubmission): string[] {
+    if (sub.answerImageUrls?.length) return sub.answerImageUrls;
+    if (sub.answerImageUrl) return [sub.answerImageUrl];
+    return [];
   }
 
   review(id: string, status: 'approved' | 'rejected') {

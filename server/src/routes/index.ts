@@ -51,7 +51,7 @@ router.post  ('/missions/:id/hint/:hintOrder/unlock', requireAdmin, Missions.unl
 // ============================================================
 // SUBMISSIONS
 // ============================================================
-router.post('/submissions',            requireAuth,  upload.single('image'), Submissions.submitAnswer);
+router.post('/submissions',            requireAuth,  upload.array('images', 3), Submissions.submitAnswer);
 router.get ('/submissions',            requireAdmin, Submissions.getSubmissions);
 router.get ('/submissions/my',         requireAuth,  Submissions.getMySubmissions);
 router.get ('/submissions/stats',      requireAdmin, Submissions.getStats);
