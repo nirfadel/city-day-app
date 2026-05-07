@@ -51,13 +51,20 @@ export const createMission = async (req: Request, res: Response) => {
 
 // PUT /api/missions/:id  [admin]
 export const updateMission = async (req: Request, res: Response) => {
-  const update: Record<string, unknown> = { ...req.body };
+  const { order, title, type, delivery, content, autoHintTitle } = req.body;
   const files = req.files as Record<string, Express.Multer.File[]> | undefined;
 
-  if (update.order) update.order = Number(update.order);
+  const update: Record<string, unknown> = {
+    ...(order         !== undefined && { order: Number(order) }),
+    ...(title         !== undefined && { title }),
+    ...(type          !== undefined && { type }),
+    ...(delivery      !== undefined && { delivery }),
+    ...(content       !== undefined && { content }),
+    ...(autoHintTitle !== undefined && { autoHintTitle }),
+  };
+
   if (files?.media?.[0]) update.mediaUrl           = fileUrl(req, files.media[0].filename);
   if (files?.hint?.[0])  update.autoHintOnApproval = fileUrl(req, files.hint[0].filename);
-  if (update.hints && typeof update.hints === 'string') update.hints = JSON.parse(update.hints as string);
 
   const mission = await Mission.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
   if (!mission) return fail(res, 'Mission not found', 404);
