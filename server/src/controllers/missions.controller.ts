@@ -99,6 +99,17 @@ export const unlockHint = async (req: Request, res: Response) => {
   ok(res, hint, 'Hint unlocked');
 };
 
+// DELETE /api/missions/:id/hint  [admin] — removes autoHintOnApproval
+export const removeAutoHint = async (req: Request, res: Response) => {
+  const mission = await Mission.findByIdAndUpdate(
+    req.params.id,
+    { $unset: { autoHintOnApproval: '', autoHintTitle: '' } },
+    { new: true }
+  );
+  if (!mission) return fail(res, 'Mission not found', 404);
+  ok(res, mission, 'Auto-hint removed');
+};
+
 // DELETE /api/missions/:id  [admin]
 export const deleteMission = async (req: Request, res: Response) => {
   await Mission.findByIdAndDelete(req.params.id);

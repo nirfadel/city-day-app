@@ -38,6 +38,7 @@ const missionUpload = upload.fields([{ name: 'media', maxCount: 1 }, { name: 'hi
 router.post  ('/missions',                            requireAdmin, missionUpload, Missions.createMission);
 router.put   ('/missions/reorder',                    requireAdmin, Missions.reorderMissions);
 router.put   ('/missions/:id',                        requireAdmin, missionUpload, Missions.updateMission);
+router.delete('/missions/:id/hint',                   requireAdmin, Missions.removeAutoHint);
 router.delete('/missions/:id',                        requireAdmin, Missions.deleteMission);
 router.post  ('/missions/:id/unlock',                 requireAdmin, Missions.unlockMission);
 router.post  ('/missions/:id/hint/:hintOrder/unlock', requireAdmin, Missions.unlockHint);

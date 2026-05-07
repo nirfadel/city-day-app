@@ -89,7 +89,15 @@ interface MissionForm {
           </div>
 
           <div class="hint-section">
-            <h4>🗺️ רמז אוטומטי לאחר אישור</h4>
+            <div class="hint-section-header">
+              <h4>🗺️ רמז אוטומטי לאחר אישור</h4>
+              @if (showForm() === 'edit' && editingMission()?.autoHintOnApproval && !hintPreview) {
+                <button class="btn btn-danger btn-sm" [disabled]="removingHint()"
+                        (click)="removeAutoHint()">
+                  {{ removingHint() ? '...' : '🗑️ הסר רמז' }}
+                </button>
+              }
+            </div>
             <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.75rem">
               כאשר המנהל מאשר submission על משימה זו, הרמז ישלח אוטומטית לקבוצה כהודעה.
             </p>
@@ -174,7 +182,8 @@ interface MissionForm {
       border: 1px solid var(--border); border-radius: 8px;
       padding: 1rem; margin-top: 0.5rem; background: #f8fafc;
     }
-    .hint-section h4 { margin: 0 0 0.25rem; }
+    .hint-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem; }
+    .hint-section-header h4 { margin: 0; }
     .current-hint-preview { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
 
     .missions-list { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -223,6 +232,7 @@ export class AdminMissionsComponent implements OnInit {
   missions       = signal<IMission[]>([]);
   showForm       = signal<'create' | 'edit' | null>(null);
   saving         = signal(false);
+  removingHint   = signal(false);
   editingMission = signal<IMission | null>(null);
 
   form: MissionForm = this.emptyForm();
@@ -328,6 +338,25 @@ export class AdminMissionsComponent implements OnInit {
         this.saving.set(false);
       },
       error: err => { this.toast.error(err.error?.error || 'שגיאה'); this.saving.set(false); },
+    });
+  }
+
+  removeAutoHint() {
+    const mission = this.editingMission();
+    if (!mission) return;
+    if (!confirm('להסיר את הרמז האוטומטי ממשימה זו?')) return;
+    this.removingHint.set(true);
+    this.api.delete<IMission>(`missions/${mission._id}/hint`).subscribe({
+      next: updated => {
+        this.editingMission.set(updated);
+        this.form.autoHintTitle = '';
+        this.hintFile = null;
+        this.hintPreview = null;
+        this.missions.update(list => list.map(m => m._id === updated._id ? updated : m));
+        this.toast.success('הרמז הוסר');
+        this.removingHint.set(false);
+      },
+      error: () => { this.toast.error('שגיאה בהסרת הרמז'); this.removingHint.set(false); },
     });
   }
 
